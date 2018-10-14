@@ -1,0 +1,5 @@
+name "enterthedungeon"
+description "A text based game"
+authors "Steven Schveighoffer"
+copyright "Copyright © 2018, Steven Schveighoffer"
+license "boost 1.0"
