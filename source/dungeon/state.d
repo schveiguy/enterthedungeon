@@ -261,6 +261,8 @@ struct GameState
 
     void describeRoom()
     {
+        import dungeon.map;
+        drawMap(this);
         write("You are in a room. ");
         auto room = user.location in rooms;
         foreach(i, w; room.walls)
