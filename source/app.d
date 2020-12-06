@@ -52,7 +52,15 @@ void main()
             Room startingRoom;
             startingRoom.walls[Direction.west] = Wall.door;
             startingRoom.walls[Direction.north] = Wall.chest;
+            import dungeon.items;
+            startingRoom.chestItems = [weapons[0], potions[0], potions[0], potions[0]];
+            // add a bat and a dungeon crawler
+            gs.enemies ~= enemies[0];
+            gs.enemies[0].location = Loc(1, 1);
             gs.rooms[Loc(0, 0)] = startingRoom;
+
+            // add some enemies
+
             gs.describeRoom;
             playGame(gs);
             return;

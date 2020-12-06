@@ -30,7 +30,8 @@ enum Wall : ubyte
     door,
     boss,
     hallway,
-    chest
+    chest,
+    open,
 }
 
 enum CHEST_MAX_ITEMS = 8;
@@ -44,7 +45,7 @@ struct Room
 struct Item
 {
     string name;
-    int weapon; // how much damage it does
+    int health; // how much damage it does/healing it provides
     int magic; // how much magic power it has
     int protection; // how much defense it provides
     bool shard;
@@ -54,7 +55,22 @@ struct Loc
 {
     int row;
     int col;
+    Loc nextRoom(Direction dir)
+    {
+        with(Direction) final switch(dir)
+        {
+        case east:
+            return Loc(row, col + 1);
+        case west:
+            return Loc(row, col - 1);
+        case north:
+            return Loc(row - 1, col);
+        case south:
+            return Loc(row + 1, col);
+        }
+    }
 }
+
 
 struct User
 {
@@ -69,6 +85,7 @@ struct Enemy
     string name;
     int health;
     Item weapon;
+    char icon;
     Loc location;
 }
 
@@ -149,6 +166,17 @@ struct GameState
                 writefln("You turn towards the chest on the %s wall, eyes glinting with excitement", dir);
             }
             break;
+        case open:
+            if(hasOpponent)
+            {
+                writefln("You flee to the %s, but the %s drags you back!", dir, opponent.name);
+            }
+            else
+            {
+                writefln("Walking %s...", dir);
+                enterRoom(dir);
+            }
+            break;
         }
     }
 
@@ -195,6 +223,17 @@ struct GameState
         case chest:
             writeln("Open chest TODO");
             break;
+        case open:
+            if(hasOpponent)
+            {
+                writefln("As you make a break to the %s, the %s taunts blocks your path, taunting you \"Where do you think you're going?!\"", curDirection, opponent.name);
+            }
+            else
+            {
+                writefln("You practice your best mime skills, pretending to open a door on the open passage to the %s...", curDirection);
+                enterRoom(curDirection);
+            }
+            break;
         }
     }
 
@@ -203,34 +242,37 @@ struct GameState
     {
         auto curLoc = user.location;
         auto curRoom = curLoc in rooms;
-        with(Direction) final switch(dir)
-        {
-        case east:
-            ++curLoc.col;
-            break;
-        case west:
-            --curLoc.col;
-            break;
-        case south:
-            ++curLoc.row;
-            break;
-        case north:
-            --curLoc.row;
-            break;
-        }
+        curLoc = curLoc.nextRoom(dir);
         auto newRoom = curLoc in rooms;
         if(newRoom is null)
         {
             Room added;
             // random item on each wall.
-            foreach(ref w; added.walls)
+            foreach(idx, ref w; added.walls)
             {
                 import std.random;
                 w = uniform!Wall;
+                auto d = cast(Direction)idx;
+                // make sure the wall is consistent with any adjacent rooms.
+                if(auto r2 = curLoc.nextRoom(d) in rooms)
+                {
+                    auto existingWall = r2.walls[d.opposite];
+                    with(Wall) final switch(existingWall)
+                    {
+                    case chest:
+                    case solid:
+                        if(w == hallway || w == door || w == boss || w == open)
+                            w = solid;
+                        break;
+                    case hallway:
+                    case open:
+                    case door:
+                    case boss:
+                        w = existingWall;
+                        break;
+                    }
+                }
             }
-
-            // make sure the wall we came from matches the one on the other side
-            added.walls[dir.opposite] = curRoom.walls[dir];
 
             // make sure there is only at most one chest
             bool hasChest = false;
@@ -286,6 +328,9 @@ struct GameState
                 break;
             case chest:
                 write("wooden chest. ");
+                break;
+            case open:
+                write("more room. ");
                 break;
             }
         }
