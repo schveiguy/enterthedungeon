@@ -37,7 +37,7 @@ struct CommandProcessor
 
     void help()
     {
-        import std.stdio;
+        import dungeon.textbuf;
         writeln("Here are the commands I understand:");
         foreach(ref c; commandList)
         {
@@ -59,4 +59,5 @@ CommandProcessor commands = CommandProcessor(
         Command(false, "look", "Describe the current room, show the map"),
         Command(false, "help", "Show help"),
         Command(false, "quit", "Quit the game"),
+        Command(false, "clear", "Clear the text output"),
 ]);

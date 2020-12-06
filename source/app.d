@@ -42,7 +42,9 @@ void playGame(ref GameState gs)
 
 void main()
 {
-    while(true)
+    import dungeon.engine;
+    gameloop();
+    /*while(true)
     {
         writeln("Welcome to the Dungeon. To play the game, type `play`. To play tutorial, type `tutorial`.");
         string answer = readln().strip.toLower;
@@ -86,5 +88,5 @@ void main()
         {
             writeln("Invalid selection: ", answer, ", please type `play` or `tutorial`.");
         }
-    }
+    }*/
 }

@@ -1,5 +1,5 @@
 module dungeon.state;
-import std.stdio;
+import dungeon.textbuf;
 
 enum Direction
 {
@@ -303,8 +303,8 @@ struct GameState
 
     void describeRoom()
     {
-        import dungeon.map;
-        drawMap(this);
+        //import dungeon.map;
+        //drawMap(this);
         write("You are in a room. ");
         auto room = user.location in rooms;
         foreach(i, w; room.walls)
