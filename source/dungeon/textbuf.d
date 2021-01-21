@@ -75,7 +75,7 @@ void write(T...)(T items)
         formattedWrite(textbuf.app, "%s", items[i]);
 }
 
-enum fontSize = 13;
+enum fontSize = 15;
 enum lineSize = fontSize + 4;
 void renderText()
 {

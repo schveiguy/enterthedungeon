@@ -13,6 +13,8 @@ struct CommandProcessor
     string getCommand(const(char)[] input)
     {
         import std.algorithm : startsWith;
+        if(input.startsWith("debug "))
+            return "debug";
         string result;
         bool multiple;
         foreach(ref c; commandList)

@@ -95,7 +95,6 @@ struct GameState
     Enemy[] enemies;
     User user;
     int curEnemy = -1;
-    Direction curDirection;
 
     ref Enemy opponent()
     {
@@ -111,7 +110,7 @@ struct GameState
     {
         Room *r = user.location in rooms;
         assert(r !is null);
-        curDirection = dir;
+        user.dir = dir;
 
         with(Wall) final switch(r.walls[dir])
         {
@@ -183,16 +182,16 @@ struct GameState
     void open()
     {
         auto room = user.location in rooms;
-        with(Wall) final switch(room.walls[curDirection])
+        with(Wall) final switch(room.walls[user.dir])
         {
         case solid:
             if(hasOpponent)
             {
-                writefln("You desperately claw at the solid wall to the %s, but you can't escape the %s that way.", curDirection, opponent.name);
+                writefln("You desperately claw at the solid wall to the %s, but you can't escape the %s that way.", user.dir, opponent.name);
             }
             else
             {
-                writefln("Alas, you do not have a blowtorch to open the solid wall to the %s.", curDirection);
+                writefln("Alas, you do not have a blowtorch to open the solid wall to the %s.", user.dir);
             }
             break;
         case door:
@@ -202,8 +201,8 @@ struct GameState
             }
             else
             {
-                writefln("You open the door to the %s and walk through...", curDirection);
-                enterRoom(curDirection);
+                writefln("You open the door to the %s and walk through...", user.dir);
+                enterRoom(user.dir);
             }
             break;
         case boss:
@@ -212,12 +211,12 @@ struct GameState
         case hallway:
             if(hasOpponent)
             {
-                writefln("As you make a break towards the %s hallway, the %s taunts blocks your path, taunting you \"Where do you think you're going?!\"", curDirection, opponent.name);
+                writefln("As you make a break towards the %s hallway, the %s taunts blocks your path, taunting you \"Where do you think you're going?!\"", user.dir, opponent.name);
             }
             else
             {
-                writefln("You practice your best mime skills, pretending to open a door on the hallway to the %s...", curDirection);
-                enterRoom(curDirection);
+                writefln("You practice your best mime skills, pretending to open a door on the hallway to the %s...", user.dir);
+                enterRoom(user.dir);
             }
             break;
         case chest:
@@ -226,12 +225,12 @@ struct GameState
         case open:
             if(hasOpponent)
             {
-                writefln("As you make a break to the %s, the %s taunts blocks your path, taunting you \"Where do you think you're going?!\"", curDirection, opponent.name);
+                writefln("As you make a break to the %s, the %s taunts blocks your path, taunting you \"Where do you think you're going?!\"", user.dir, opponent.name);
             }
             else
             {
-                writefln("You practice your best mime skills, pretending to open a door on the open passage to the %s...", curDirection);
-                enterRoom(curDirection);
+                writefln("You practice your best mime skills, pretending to open a door on the open passage to the %s...", user.dir);
+                enterRoom(user.dir);
             }
             break;
         }
