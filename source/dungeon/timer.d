@@ -97,17 +97,16 @@ struct EventList
             ++nEvents;
         }
     }
-    size_t runAfter(DG)(Duration after, DG dg)
+    size_t run(DG)(Duration after, DG dg)
     {
         auto newEvent = Event(dg, gameTimer.peek + after, Duration.init, gameTimer.peek, ++evid);
         addEvent(newEvent);
         return newEvent.id;
     }
 
-    size_t repeatEvery(DG)(Duration period, DG dg)
+    size_t repeat(DG)(Duration period, DG dg)
     {
         auto newEvent = Event(dg, gameTimer.peek + period, period, gameTimer.peek, ++evid);
-        addEvent(newEvent);
         addEvent(newEvent);
         return newEvent.id;
     }
@@ -148,15 +147,7 @@ struct EventList
         
         // now, remove any invalid events
         size_t validEvents = 0;
-        foreach(size_t i; 0 .. nEvents)
-        {
-            if(eventList[i].id)
-            {
-                if(i != validEvents)
-                    eventList[validEvents] = eventList[i];
-                ++validEvents;
-            }
-        }
-        nEvents = validEvents;
+        import std.algorithm : remove, SwapStrategy;
+        nEvents = eventList[0 .. nEvents].remove!((ref ev) => ev.id == 0, SwapStrategy.unstable).length;
     }
 }

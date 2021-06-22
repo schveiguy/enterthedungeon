@@ -62,4 +62,5 @@ CommandProcessor commands = CommandProcessor(
         Command(false, "help", "Show help"),
         Command(false, "quit", "Quit the game"),
         Command(false, "clear", "Clear the text output"),
+        Command(false, "inventory", "Show your current inventory"),
 ]);

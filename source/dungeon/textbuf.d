@@ -4,25 +4,22 @@ import std.array : Appender;
 
 struct TextBuf
 {
-    enum maxLines = 5;
+    enum idealLines = 5;
     enum maxLineLength = 100;
     char[][] lines;
-    size_t last;
+    int pin; // line that can't scroll off
 
     Appender!(char[]) app;
 
+    void setPin()
+    {
+        pin = cast(int)lines.length;
+    }
+
     private void putLine(char[] ln)
     {
-        if(lines.length < maxLines)
-        {
-            lines ~= ln;
-            last = lines.length - 1;
-        }
-        else
-        {
-            last = (last + 1) % maxLines;
-            lines[last] = ln;
-        }
+        normalize();
+        lines ~= ln;
     }
     void addLines()
     {
@@ -42,10 +39,35 @@ struct TextBuf
         app = app.init;
     }
 
+    void normalize()
+    {
+        // save the last idealLines as the first lines
+        if(pin > 0 && lines.length > idealLines)
+        {
+            int i = cast(int)lines.length - idealLines;
+            if(i > pin)
+                i = pin;
+            int j = 0;
+            pin -= i;
+            while(i < lines.length)
+            {
+                lines[j++] = lines[i++];
+            }
+            lines.length = j;
+            lines.assumeSafeAppend;
+        }
+    }
+
     void clear()
     {
         lines.length = 0;
-        last = 0;
+        lines.assumeSafeAppend;
+        pin = 0;
+    }
+
+    int rectheight()
+    {
+        return cast(int)(lines.length + 2) * lineSize;
     }
 }
 
@@ -80,11 +102,11 @@ enum lineSize = fontSize + 4;
 void renderText()
 {
     int windowsize = 5 * 150;
-    int rectheight = cast(int)(textbuf.lines.length + 2) * lineSize;
+    int rectheight = textbuf.rectheight;
     DrawRectangle(0, windowsize - rectheight, windowsize, rectheight, Color(0, 0, 0, 0x40));
     foreach(i; 0 .. textbuf.lines.length)
     {
-        auto lineToDraw = (textbuf.last + textbuf.lines.length - i) % textbuf.lines.length;
+        auto lineToDraw = textbuf.lines.length - 1 - i;
         DrawText(textbuf.lines[lineToDraw].ptr, 4, cast(int)(windowsize - lineSize - lineSize - 4 - i * lineSize), fontSize, Colors.GREEN);
     }
 }
