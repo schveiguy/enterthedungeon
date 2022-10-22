@@ -138,7 +138,7 @@ void gameloop()
     auto dungeonbat = loadTexture("assets/Dungeon Bat.png");
     dungeonbat.width = 100;
     dungeonbat.height = 200;
-    auto cman = loadTexture("assets/Dungeon Man.png");
+    auto cman = loadTexture("assets/dungeonMan.png");
     auto healingpotion = loadTexture("assets/healingpotion.png");
     auto branch = loadTexture("assets/branch.png");
     auto hearts = loadTexture("assets/hearts.png");
@@ -189,36 +189,49 @@ void gameloop()
     events.initialize();
     events.repeat(100.msecs, {batFrame = !batFrame;});
 
-    Vector2 *targetVector;
-    Vector2 mancenter = Vector2(33, 48);
+    Vector2 mancenter = Vector2(38, 30);
     Vector2 chestcenter = Vector2(chest.width, chest.height) / 2;
     Vector2 offset = Vector2(0, 0);
     Vector2 heartOffset = Vector2(40, 33);
-    
-    bool roomcenters = false;
-    bool drawOuterWalls = false;
-    bool showChestRatio = false;
+    Vector2 userpos = Vector2(0, 0);
+    bool moving = false; // is the player moving.
+    float walkSpeed = 1.5; // how fast does the player walk (in pixels/frame)
     bool inventoryDisplay = false;
+    
+    struct DebugState
+    {
+        Vector2 *targetVector;
+        bool roomcenters = false;
+        bool drawOuterWalls = false;
+        bool showChestRatio = false;
+    }
+
+    DebugState dbg;
 
     void processDebugInput(const(char)[] input)
     {
         import std.range : split;
         import std.conv : to;
         auto words = input.split;
-        if(words[1].startsWith("ch"))
+        if(words[1] == "off")
+        {
+            dbg = dbg.init;
+            writeln("reset debug state");
+        }
+        else if(words[1].startsWith("ch"))
         {
             // move the appropriate chest
-            targetVector = &chestPos[words[1][2 .. $].to!int];
+            dbg.targetVector = &chestPos[words[1][2 .. $].to!int];
             writeln("adjusting chest ", words[1][2 .. $]);
         }
         else if(words[1] == "mc")
         {
-            targetVector = &mancenter;
+            dbg.targetVector = &mancenter;
             writeln("adjusting man center");
         }
         else if(words[1] == "ho")
         {
-            targetVector = &heartOffset;
+            dbg.targetVector = &heartOffset;
             writeln("adjusting heart offset");
         }
         else if(words[1] == "sh")
@@ -228,23 +241,23 @@ void gameloop()
         }
         else if(words[1] == "cc")
         {
-            targetVector = &chestcenter;
+            dbg.targetVector = &chestcenter;
             writeln("adjusting chest center");
         }
         else if(words[1] == "src")
         {
-            roomcenters = !roomcenters;
-            writeln("toggle room centers to ", roomcenters);
+            dbg.roomcenters = !dbg.roomcenters;
+            writeln("toggle room centers to ", dbg.roomcenters);
         }
         else if(words[1] == "sow")
         {
-            drawOuterWalls = !drawOuterWalls;
-            writeln("toggle outer walls to ", drawOuterWalls);
+            dbg.drawOuterWalls = !dbg.drawOuterWalls;
+            writeln("toggle outer walls to ", dbg.drawOuterWalls);
         }
         else if(words[1] == "scr")
         {
-            showChestRatio = !showChestRatio;
-            writeln("toggle chest ratio display to ", showChestRatio);
+            dbg.showChestRatio = !dbg.showChestRatio;
+            writeln("toggle chest ratio display to ", dbg.showChestRatio);
         }
         else 
         {
@@ -254,19 +267,21 @@ void gameloop()
 
     void drawMan()
     {
-        auto animation = SegmentedTexture(cman, 3, Vector2(100, 100), mancenter);
-        auto dest = Rectangle(2.5 * 150, 2.5 * 150, 75, 75);
+        auto animation = SegmentedTexture(cman, 9, Vector2(40, 40), mancenter);
+        auto dest = mkrect(Vector2(2.5 * 150, 2.5 * 150) + userpos, 75, 75);
         with(Direction) final switch(gs.user.dir)
         {
         case north:
             animation.draw(dest, walkframe + 3);
             break;
         case south:
-        case east:
             animation.draw(dest, walkframe);
             break;
+        case east:
+            animation.draw(dest, walkframe + 6);
+            break;
         case west:
-            animation.drawFlipX(dest, walkframe);
+            animation.drawFlipX(dest, walkframe + 6);
             break;
         }
     }
@@ -313,41 +328,86 @@ gameloop:
     while(!WindowShouldClose)
     {
         events.process();
-        if(animateWalking && offset.x == 0 && offset.y == 0)
+        if(animateWalking && !moving && offset.x == 0 && offset.y == 0)
         {
             events.removeEvent(animateWalking);
             walkframe = 0;
             animateWalking = 0;
         }
         int kp = 0;
-        if(targetVector !is null)
+        if(dbg.targetVector !is null)
         {
             bool keypressed = false;
             if(IsKeyPressed(KeyboardKey.KEY_DOWN))
             {
-                targetVector.y += 1;
+                dbg.targetVector.y += 1;
                 keypressed = true;
             }
             if(IsKeyPressed(KeyboardKey.KEY_UP))
             {
-                targetVector.y -= 1;
+                dbg.targetVector.y -= 1;
                 keypressed = true;
             }
             if(IsKeyPressed(KeyboardKey.KEY_LEFT))
             {
-                targetVector.x -= 1;
+                dbg.targetVector.x -= 1;
                 keypressed = true;
             }
             if(IsKeyPressed(KeyboardKey.KEY_RIGHT))
             {
-                targetVector.x += 1;
+                dbg.targetVector.x += 1;
                 keypressed = true;
             }
             if(keypressed)
             {
                 textbuf.setPin();
-                writeln("target vector now ", *targetVector);
+                writeln("target vector now ", *dbg.targetVector);
             }
+        }
+        else
+        {
+            auto motion = Vector2(0, 0);
+            if(IsKeyDown(KeyboardKey.KEY_DOWN))
+            {
+                // move down
+                motion.y += walkSpeed;
+                gs.user.dir = Direction.south;
+            }
+            if(IsKeyDown(KeyboardKey.KEY_UP))
+            {
+                // move up
+                motion.y -= walkSpeed;
+                gs.user.dir = Direction.north;
+            }
+            if(IsKeyDown(KeyboardKey.KEY_LEFT))
+            {
+                // move left
+                motion.x -= walkSpeed;
+                gs.user.dir = Direction.west;
+            }
+            if(IsKeyDown(KeyboardKey.KEY_RIGHT))
+            {
+                // move right
+                motion.x += walkSpeed;
+                gs.user.dir = Direction.east;
+            }
+            // enable or disable the walking animation
+            bool newmoving = motion != Vector2.init;
+            if(newmoving && !moving)
+            {
+                animateWalking = events.repeat(75.msecs, {
+                   walkframe = (walkframe + 1) % 3;
+                });
+                moving = true;
+            }
+            else if(!newmoving && moving)
+            {
+                events.removeEvent(animateWalking);
+                moving = false;
+            }
+            userpos = userpos + motion;
+            userpos.x = min(max(-55, userpos.x), 55);
+            userpos.y = min(max(-55, userpos.y), 55);
         }
         if(IsKeyPressed(KeyboardKey.KEY_BACKSPACE))
             deleteCharacter();
@@ -396,6 +456,7 @@ gameloop:
             }
             if(gs.user.location != curpos)
             {
+                userpos = Vector2(0, 0);
                 offset = offsetStarts[gs.user.dir];
                 events.removeEvent(animateWalking);
                 events.removeEvent(movePlayer);
@@ -417,7 +478,8 @@ gameloop:
 
             resetInput();
         }
-        while((kp = GetKeyPressed()) != 0)
+        while((kp = GetCharPressed()) != 0)
+        //while((kp = GetKeyPressed()) != 0)
         {
             if(kp < 0x80)
                 addCharacter(cast(char)kp);
@@ -459,17 +521,17 @@ gameloop:
                             DrawTexturePro(chest, Rectangle(0, 0, chest.width, chest.height), mkrect(Vector2(x * 150, y * 150) + chestPos[i] + offset + chestcenter, chest.width, chest.height), chestcenter, 90 * i, Colors.WHITE);
                         }
                     }
-                    if(roomcenters)
+                    if(dbg.roomcenters)
                         DrawCircleV(Vector2(x + 0.5, y + 0.5) * 150 + offset, 2, Colors.WHITE);
                 }
             }
 
         // center room
         drawMan();
-        if(roomcenters)
+        if(dbg.roomcenters)
             DrawCircleV(Vector2(2.5, 2.5) * 150 + offset, 2, Colors.WHITE);
         //DrawRectangleLinesEx(Rectangle(2 * 150 - 5 + offset.x, 2 * 150 - 5 + offset.y, 160, 160), 5, Color(0x10, 0x10, 0x10, 0xff));
-        if(drawOuterWalls)
+        if(dbg.drawOuterWalls)
         {
             static immutable corners = [
                 Vector2(0, 0),
@@ -499,7 +561,7 @@ gameloop:
                     }
                 }
         }
-        if(showChestRatio)
+        if(dbg.showChestRatio)
         {
             DrawText(TextFormat("Num chests: %d, Num Rooms: %d, Ratio: %lf", cast(int)gs.nChests, cast(int)gs.rooms.length, cast(double)gs.nChests / gs.rooms.length), 1, 1, 20, Colors.WHITE);
         }
