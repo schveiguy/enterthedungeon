@@ -13,6 +13,8 @@ struct CommandProcessor
     string getCommand(const(char)[] input)
     {
         import std.algorithm : startsWith;
+        if(input.startsWith("debug "))
+            return "debug";
         string result;
         bool multiple;
         foreach(ref c; commandList)
@@ -37,7 +39,7 @@ struct CommandProcessor
 
     void help()
     {
-        import std.stdio;
+        import dungeon.textbuf;
         writeln("Here are the commands I understand:");
         foreach(ref c; commandList)
         {
@@ -59,4 +61,6 @@ CommandProcessor commands = CommandProcessor(
         Command(false, "look", "Describe the current room, show the map"),
         Command(false, "help", "Show help"),
         Command(false, "quit", "Quit the game"),
+        Command(false, "clear", "Clear the text output"),
+        Command(false, "inventory", "Show your current inventory"),
 ]);
